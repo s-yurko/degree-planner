@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: pos
+    description: >
+      POS mart: the program-of-study -> One row per (pos, year, academic_requirement). 
+      year is a hardcoded 2022 placeholder until real per-program version data lands.
+    columns:
+      - name: pos
+        description: "Program of study: Major/Minor name, focus name, or 'University'."
+        data_tests:
+          - not_null
+      - name: year
+        description: "Fake placeholder (2022), temporary until real version data lands."
+        data_tests:
+          - not_null
+      - name: academic_requirement
+        description: "Requirement name; joins to the academic_requirements mart."
+        data_tests:
+          - not_null
+
+  - name: academic_requirements
+    description: >
+      Requirement dictionary mart: one row per (academic_requirement,
+      requirement_type, student_eligibility_rule). Bucketable types only
+      (course/credit/combination); grade/test metadata is excluded.
+    columns:
+      - name: requirement_type
+        description: "Bucketable type: course, credit, or combination."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['course', 'credit', 'combination']
+      - name: student_eligibility_rule
+        description: >
+          The rule that defines satisfaction. Resolves to courses via ser, or to a
+          logic tree via combination_ser when requirement_type = combination.
+        data_tests:
+          - not_null
+
+  - name: ser
+    description: >
+      SER dictionary mart: one row per (student_eligibility_rule, course_code).
+      Almost identical to int_ser, but drops is_merged_from_conflicting_dupes.
+    columns:
+      - name: student_eligibility_rule
+        description: "The rule this course helps satisfy; joins from academic_requirements."
+        data_tests:
+          - not_null
+      - name: course_code
+        description: "Course code, or 'TEST' for rules with no courses."
+        data_tests:
+          - not_null
+      - name: meaning
+        description: "Explanation text for TEST rows; null for real course rows."
+
+  - name: combination_ser
+    description: >
+      Combination SER mart: one row per (student_eligibility_rule, combination_order,
+      child_rule). Almost identical to int_combination_ser, but renames
+      selector_for_combination_eligibility_rule to selector.
+    columns:
+      - name: student_eligibility_rule
+        description: "Parent combination rule; the join key from academic_requirements."
+        data_tests:
+          - not_null
+      - name: child_rule
+        description: "One child reference (a SER or another combination parent)."
+        data_tests:
+          - not_null
+      - name: and_or
+        description: "Connector joining this slot to the expression built from prior slots."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['And', 'Or']

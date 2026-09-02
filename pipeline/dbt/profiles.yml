@@ -1,0 +1,15 @@
+# same POSTGRES_* env vars as docker-compose (defaults are dev-only), 
+# so the same file connects to local Docker now and AWS RDS later
+
+dplanner:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5432') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'dplanner') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD', 'dplanner') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'dplanner') }}"
+      schema: analytics # default target only; models set +schema (staging/intermediate/marts)
+      threads: 4

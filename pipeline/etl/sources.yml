@@ -1,0 +1,16 @@
+# the four current WD exports, one raw table each (temporary while the real
+# ingest is figured out)
+
+sources:
+  - file: WD_Programs_of_Study.xlsx
+    table: programs_of_study
+    # can also specify sheet
+
+  - file: WD_Academic_Requirements_for_POS.xlsx
+    table: academic_requirements
+
+  - file: WD_Student_Eligibility_Rules.xlsx
+    table: student_eligibility_rules
+
+  - file: WD_Combination_Eligibility_Rules.xlsx
+    table: combination_eligibility_rules

@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    description: >
+      Faithful, append-only landing of the WD_* Workday exports, loaded by
+      pipeline/etl/load_raw.py. Everything is text; no logic applied.
+    tables:
+      - name: programs_of_study
+        description: "Master list of every degree/major/minor/focus."
+      - name: academic_requirements
+        description: "One row per (program, requirement) mapping."
+      - name: student_eligibility_rules
+        description: "Master dictionary of eligibility rules."
+      - name: combination_eligibility_rules
+        description: "Edges of combination logic trees, one row per child rule."

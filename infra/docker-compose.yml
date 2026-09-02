@@ -1,0 +1,24 @@
+# local Postgres for DPlanner, eventually will be lifted to AWS/RDS
+services:
+  postgres:
+    image: postgres:16
+    container_name: dplanner_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dplanner}
+      POSTGRES_DB: ${POSTGRES_DB:-dplanner}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # DB cluster lives in a named volume, NOT in the repo tree
+      - dplanner_pgdata:/var/lib/postgresql/data
+      # SQL here runs once, on first cluster init
+      - ./postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dplanner} -d ${POSTGRES_DB:-dplanner}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  dplanner_pgdata:

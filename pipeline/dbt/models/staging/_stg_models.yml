@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: stg_programs_of_study
+    description: "One row per program of study. Cleaned 1:1 mirror of raw.programs_of_study."
+    columns:
+      - name: program_of_study
+        description: "Program name; natural key (unique across the file)."
+        data_tests:
+          - not_null
+          - unique
+      - name: academic_requirements
+        description: "Requirement names for the program. Newline-separated list, exploded downstream."
+
+  - name: stg_academic_requirements
+    description: "One row per (program, requirement) mapping. Cleaned 1:1 mirror of raw.academic_requirements."
+    columns:
+      - name: program_of_study
+        description: "FK to a program of study."
+        data_tests:
+          - not_null
+      - name: student_eligibility_rule
+        description: >
+          FK into the eligibility rules. Not tested not_null: blank rows exist in
+          source, filtered downstream.
+
+  - name: stg_student_eligibility_rules
+    description: "Master dictionary of eligibility rules. Cleaned 1:1 mirror of raw.student_eligibility_rules."
+    columns:
+      - name: student_eligibility_rule
+        description: >
+          Rule key. Not tested unique: duplicate keys exist in source, deduping in
+          the intermediate-layer.
+        data_tests:
+          - not_null
+      - name: all_courses_including_courses_from_smart_lists
+        description: "Courses that satisfy the rule. Newline-separated list, exploded downstream."
+
+  - name: stg_combination_eligibility_rules
+    description: "One edge per row of the combination logic trees. Cleaned 1:1 mirror of raw.combination_eligibility_rules."
+    columns:
+      - name: student_eligibility_rule
+        description: "Parent (combination) rule key."
+        data_tests:
+          - not_null
+      - name: student_eligibility_rules
+        description: "Child rule reference(s). Newline-separated list, exploded downstream."
+        data_tests:
+          - not_null

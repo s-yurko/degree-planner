@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: int_pos_requirements_exploded
+    description: >
+      POS build, stage 1 of 2. One row per (program_of_study, academic_requirement),
+      exploded from stg_programs_of_study. University-wide requirements (shared by
+      every Major) are factored out into a synthetic 'University' program.
+    columns:
+      - name: program_of_study
+        description: "Program name, or 'University' for the synthetic university-wide row."
+        data_tests:
+          - not_null
+      - name: program_type
+        description: "Major, Major Focus, or Minor. 'University' rows are tagged Major."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Major', 'Major Focus', 'Minor']
+      - name: academic_requirement
+        description: "Requirement name, one per row."
+        data_tests:
+          - not_null
+
+  - name: int_pos
+    description: >
+      POS build, stage 2 of 2. Resolves Major Focuses (own requirements plus their
+      parent major's, deduped) and passes Majors and Minors through unchanged. One
+      row per (pos, academic_requirement).
+    columns:
+      - name: pos
+        description: "Program of study: Major/Minor name, or a focus name."
+        data_tests:
+          - not_null
+      - name: academic_requirement
+        description: "Requirement name."
+        data_tests:
+          - not_null
+
+  - name: int_academic_requirements
+    description: >
+      Requirement dictionary: one row per (academic_requirement, requirement_type,
+      student_eligibility_rule). Comprehensive across all eligrule_type values;
+      routing bucketable types away from grade/test metadata happens downstream.
+    columns:
+      - name: requirement_type
+        description: "Normalized eligrule_type."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['course', 'credit', 'combination', 'grade', 'test']
+      - name: student_eligibility_rule
+        description: "The rule that defines how the requirement is satisfied."
+        data_tests:
+          - not_null
+      - name: eligibility_rule_meaning
+        description: >
+          The AR file's own free-text meaning, per (program, requirement, rule). Nullable.
+
+  - name: int_combination_ser
+    description: >
+      One row per (parent_rule, combination_order, child_rule), exploded from
+      stg_combination_eligibility_rules. Slot-level metadata (parens, and_or,
+      selector, number_of_rules) copies unchanged onto every child in the slot.
+    columns:
+      - name: student_eligibility_rule
+        description: "Parent combination rule."
+        data_tests:
+          - not_null
+      - name: child_rule
+        description: "One child reference (a SER or another combination parent)."
+        data_tests:
+          - not_null
+      - name: and_or
+        description: "Connector joining this slot to the expression built from prior slots."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['And', 'Or']
+
+  - name: int_ser
+    description: >
+      SER -> course_code dictionary: one row per (student_eligibility_rule,
+      course_code). Rules with no courses (e.g. placement exams) get one
+      course_code = 'TEST' row with a meaning string instead of being dropped.
+    columns:
+      - name: student_eligibility_rule
+        description: "The rule this course satisfies."
+        data_tests:
+          - not_null
+      - name: course_code
+        description: "Course code, or 'TEST' for rules with no courses."
+        data_tests:
+          - not_null
+      - name: meaning
+        description: "Explanation text for TEST rows; null for real course rows."
+      - name: is_merged_from_conflicting_dupes
+        description: >
+          True when duplicate source rows for this rule listed different course
+          sets and had to be merged.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
